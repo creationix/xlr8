@@ -1,0 +1,9 @@
+[submodule "conquest"]
+	path = conquest
+	url = https://github.com/creationix/conquest.git
+[submodule "exploder"]
+	path = exploder
+	url = https://github.com/creationix/exploder.git
+[submodule "applets"]
+	path = applets
+	url = https://github.com/creationix/applets.git
