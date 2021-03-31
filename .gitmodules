@@ -7,3 +7,9 @@
 [submodule "applets"]
 	path = applets
 	url = https://github.com/creationix/applets.git
+[submodule "lit"]
+	path = lit
+	url = https://github.com/luvit/lit.git
+[submodule "luvit"]
+	path = luvit
+	url = https://github.com/luvit/luvit.git
