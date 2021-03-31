@@ -1,0 +1,12 @@
+- Lazy loaded graph for static content, uses service worker in browsers to look like real files.
+- The graph is backed by some content addressable system that enables snapshots of past versions.
+  - A dataset can be compacted to improve read access for cold clients.
+    - This will kill cache for existing warm clients though since it rewrites all blocks.
+  - urls for static content look like xlr8://(hash.)name/path within a dataset
+  - CDN urls will look like https://(hash.)name.xlr8.tech/path
+- name servers map friendly names to root hashes and allow writes using signed messages
+  - multiple private keys can be authorized for a single name (similar to ssh authorized_keys)
+  - names have owners who are paid accounts
+- In addition to service worker, web proxies at the edge can serve files as static files
+  - revision.studio or xlr8.tech can be used for this.
+  - customers can point custom domains to these servers for pretty urls
