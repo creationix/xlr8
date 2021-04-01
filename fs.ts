@@ -1,9 +1,9 @@
 import { AppendStorage } from "./storage.ts";
-import { decode, encode } from "./codec.ts";
 
 export function initialize(storage: AppendStorage): void {
-  storage.append(encode({}));
+  storage.appendObj({});
 }
+
 type Listing = {
   [path: string]: number;
 };
@@ -16,8 +16,8 @@ export async function get(
 ): Promise<Uint8Array | void> {
   do {
     const listing = listingCache[listingOffset] || (
-      listingCache[listingOffset] = decode(
-        await storage.read(listingOffset),
+      listingCache[listingOffset] = await storage.readObj(
+        listingOffset,
       ) as Listing
     );
     const dataOffset = listing[path];
@@ -36,8 +36,8 @@ export async function* iterate(
   const seen: { [path: string]: boolean } = { "": true };
   do {
     const listing = listingCache[listingOffset] || (
-      listingCache[listingOffset] = decode(
-        await storage.read(listingOffset),
+      listingCache[listingOffset] = await storage.readObj(
+        listingOffset,
       ) as Listing
     );
 
@@ -58,9 +58,7 @@ export async function put(
   file: Uint8Array,
 ): Promise<void> {
   const last = storage.getLastOffset();
-  await storage.append(
-    encode({ "": last, [path]: await storage.append(file) }),
-  );
+  await storage.appendObj({ "": last, [path]: await storage.append(file) });
 }
 
 export async function importFolder(
@@ -77,5 +75,5 @@ export async function importFolder(
       await importFolder(storage, path, entries);
     }
   }
-  return storage.append(encode(entries));
+  return storage.appendObj(entries);
 }
