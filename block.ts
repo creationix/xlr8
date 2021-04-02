@@ -10,7 +10,7 @@ interface BlockDevice {
   blockCount: number;
 }
 
-const blocks: { [hash: string]: Uint8Array } = {};
+let blocks: { [hash: string]: Uint8Array } = {};
 function save(data: Uint8Array): Uint8Array {
   const hash = new Sha256().update(data);
   blocks[hash.hex()] = data.slice(0);
@@ -53,15 +53,57 @@ export class CaifyBlockDevice implements BlockDevice {
   }
 }
 
-const dev = new CaifyBlockDevice(0x1000, 3);
-// console.log(blocks);
-
-for (const hex in blocks) {
-  console.log(format(blocks[hex].slice(0, 32)));
-  console.log(hex);
+// Block sizes in powers of two from 4k to 32k
+const blockSizes = [0x800, 0x1000, 0x2000, 0x4000, 0x8000]
+const recursions = [1, 2, 3, 4]
+for (const depth of recursions) {
+  for (const size of blockSizes) {
+    blocks = {};
+    const dev = new CaifyBlockDevice(size, depth);
+    // console.log(dev);
+    console.log()
+    console.log("Block Size", humanSize(size));
+    console.log("Recursion Depth", depth);
+    const usedSpace = Object.keys(blocks).length * dev.blockSize
+    console.log("Used Space", usedSpace, humanSize(usedSpace));
+    const availableSpace = dev.blockCount * dev.blockSize;
+    console.log("Available Space", availableSpace, humanSize(availableSpace));
+    const hashesPerBlock = dev.blockSize >> 5;
+    let overhead = 0
+    let i = depth;
+    while (i) {
+      overhead += Math.pow(hashesPerBlock, --i) * dev.blockSize
+    }
+    console.log("Overhead Space", overhead, humanSize(overhead));
+    console.log("Overhead percentage", (overhead / availableSpace * 100).toFixed(3) + "%");
+    // console.log(format(dev.rootHash));
+  }
 }
-console.log(format(dev.rootHash));
 
-console.log(dev);
-console.log("Used Space", Object.keys(blocks).length * dev.blockSize);
-console.log("Available Space", dev.blockCount * dev.blockSize);
+// for (const hex in blocks) {
+//   console.log(format(blocks[hex].slice(0, 128)));
+//   console.log(hex);
+// }
+
+
+function humanSize(size: number): string {
+  if (size < 0x400) {
+    return `${size} bytes`
+  }
+  if (size < 0x100000) {
+    return `${(size / 0x400).toFixed(2)} KiB`
+  }
+  if (size < 0x40000000) {
+    return `${(size / 0x100000).toFixed(2)} MiB`
+  }
+  if (size < 0x10000000000) {
+    return `${(size / 0x40000000).toFixed(2)} GiB`
+  }
+  if (size < 0x4000000000000) {
+    return `${(size / 0x10000000000).toFixed(2)} TiB`
+  }
+  if (size < 0x1000000000000000) {
+    return `${(size / 0x4000000000000).toFixed(2)} PiB`
+  }
+  return `${(size / 0x1000000000000000).toFixed(2)} EiB`
+}
