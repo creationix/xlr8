@@ -91,6 +91,7 @@ class CaifyStorage implements BlockStorage {
       }
     }
   }
+
   private async getChildHash(
     parentHash: Uint8Array,
     subIndex: number,
@@ -111,14 +112,17 @@ class CaifyStorage implements BlockStorage {
     }
     await this.getHashChain(depth - 1, index >> (this.blockPower - 5), chain);
     const subIndex = index % (Math.pow(2, this.blockPower - 5));
-    console.log({ depth, subIndex });
-    chain.push();
+    const childHash = await this.getChildHash(
+      chain[chain.length - 1],
+      subIndex,
+    );
+    chain.push(childHash);
   }
 
   async get(index: number, block: Uint8Array): Promise<void> {
     const chain: Uint8Array[] = [];
     await this.getHashChain(this.recursionDepth, index, chain);
-    console.log({ index, chain });
+    this.hashes.get(chain[chain.length - 1], block);
   }
 
   async put(index: number, block: Uint8Array): Promise<void> {
@@ -130,7 +134,11 @@ const storage = new CaifyStorage(mem, 7, 2);
 console.log({ mem, storage });
 await storage.initialize();
 console.log({ mem, storage });
-console.log(await storage.get(0, new Uint8Array(storage.blockSize)));
+const result = new Uint8Array(storage.blockSize);
+for (let i = 0; i < storage.blockCount; i++) {
+  await storage.get(0, result);
+  console.log(result);
+}
 
 // const buffer = new Uint8Array(10);
 // dev.read(0, buffer);
