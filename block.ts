@@ -105,7 +105,6 @@ class CaifyStorage implements BlockStorage {
       await this.hashes.get(parentHash, parent);
       const offset = ((index >>> (height * bitsPerLevel)) % hashesPerBlock) <<
         5;
-      console.log({ index, height, offset });
       parentHash = parent.subarray(offset, offset + 32);
     }
     this.hashes.get(parentHash, block);
@@ -122,7 +121,8 @@ class CaifyStorage implements BlockStorage {
     const hashesPerBlock = Math.pow(2, bitsPerLevel);
     for (let height = 1; height <= this.recursionDepth; height++) {
       await this.get(index, parent, height);
-      const offset = ((index >>> (height * bitsPerLevel)) % hashesPerBlock) <<
+      const offset =
+        ((index >>> ((height - 1) * bitsPerLevel)) % hashesPerBlock) <<
         5;
       parent.set(hash, offset);
       await this.hashes.set(parent, hash);
@@ -138,14 +138,18 @@ console.log({ mem, storage });
 await storage.initialize();
 console.log({ mem, storage });
 const result = new Uint8Array(storage.blockSize);
-for (let i = 1; i < storage.blockCount; i++) {
+for (let i = 0; i < storage.blockCount; i++) {
   await storage.get(i, result);
-  console.log("empty", i, result);
+  // console.log("empty", i);
+  // console.log(format(result));
   result.fill(i);
   await storage.set(i, result);
+  // console.log("Writing", i);
+  // console.log(format(result));
   await storage.get(i, result);
-  console.log("Filled", i, result);
-  break;
+  console.log("Filled", i);
+  console.log(format(result));
+  // break;
 }
 
 for (const hash in mem.blocks) {
