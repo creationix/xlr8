@@ -92,37 +92,18 @@ class CaifyStorage implements BlockStorage {
     }
   }
 
-  private async getChildHash(
-    parentHash: Uint8Array,
-    subIndex: number,
-  ): Promise<Uint8Array> {
-    const parent = new Uint8Array(this.blockSize);
-    await this.hashes.get(parentHash, parent);
-    return parent.subarray(subIndex << 5, (subIndex << 5) + 32);
-  }
-
-  private async getHashChain(
-    depth: number,
-    index: number,
-    chain: Uint8Array[],
-  ): Promise<void> {
-    if (depth == 0) {
-      chain.push(this.rootHash);
-      return;
-    }
-    await this.getHashChain(depth - 1, index >> (this.blockPower - 5), chain);
-    const subIndex = index % (Math.pow(2, this.blockPower - 5));
-    const childHash = await this.getChildHash(
-      chain[chain.length - 1],
-      subIndex,
-    );
-    chain.push(childHash);
-  }
-
   async get(index: number, block: Uint8Array): Promise<void> {
-    const chain: Uint8Array[] = [];
-    await this.getHashChain(this.recursionDepth, index, chain);
-    this.hashes.get(chain[chain.length - 1], block);
+    let parentHash = this.rootHash;
+    const parent = new Uint8Array(this.blockSize);
+    const bitsPerLevel = this.blockPower - 5;
+    const hashesPerBlock = Math.pow(2, bitsPerLevel);
+    for (let height = this.recursionDepth - 1; height >= 0; height--) {
+      await this.hashes.get(parentHash, parent);
+      const offset = ((index >>> (height * bitsPerLevel)) % hashesPerBlock) <<
+        5;
+      parentHash = parent.subarray(offset, offset + 32);
+    }
+    this.hashes.get(parentHash, block);
   }
 
   async put(index: number, block: Uint8Array): Promise<void> {
@@ -136,8 +117,8 @@ await storage.initialize();
 console.log({ mem, storage });
 const result = new Uint8Array(storage.blockSize);
 for (let i = 0; i < storage.blockCount; i++) {
-  await storage.get(0, result);
-  console.log(result);
+  await storage.get(i, result);
+  console.log(i, result);
 }
 
 // const buffer = new Uint8Array(10);
